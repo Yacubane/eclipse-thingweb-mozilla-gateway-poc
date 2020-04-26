@@ -1,21 +1,44 @@
-class ThingConnection {
-    constructor() {
-        this.listeners = {
-            'change-light': [],
-            'change-gate': [],
-            'change-garage-door': [],
-            'change-outside-temperature': [],
-            'change-outside-humidity': [],
-            'change-outside-pressure': []
-        }
+class ThingValue {
+    constructor(value) {
+        this.value = value;
+        this.listeners = [];
     }
 
-    _notify(event, response) {
-        this.listeners[event].forEach(listener => listener(response));
+    addListener(listener) {
+        this.listeners.push(listener);
+        listener(this.value)
+    }
+
+    setValue(value) {
+        this.value = value;
+        this.listeners.forEach(listener => listener(this.value));
+    }
+}
+
+class ThingConnection {
+    constructor() {
+        this.values = {
+            'light': new ThingValue(),
+            'gate': new ThingValue(),
+            'garage-door': new ThingValue(),
+            'outside-temperature': new ThingValue(),
+            'outside-humidity': new ThingValue(),
+            'outside-pressure': new ThingValue()
+        }
+        this._startMock();
+    }
+
+    _startMock() {
+        this.values['light'].setValue(false);
+        this.values['gate'].setValue(false);
+        this.values['garage-door'].setValue(false);
+        this.values['outside-temperature'].setValue(22);
+        this.values['outside-humidity'].setValue(25);
+        this.values['outside-pressure'].setValue(1020);
     }
 
     on(event, listener) {
-        this.listeners[event].push(listener);
+        this.values[event].addListener(listener);
     }
 
     perform(action) {
@@ -70,7 +93,7 @@ WoT.produce({
     }
 })
     .then((thing) => {
-        thingConnection.on('change-outside-lights', (lightState) => {
+        thingConnection.on('outside-lights', (lightState) => {
             thing.writeProperty("on", lightState);
         });
         thing.writeProperty("on", true);
@@ -129,7 +152,7 @@ WoT.produce({
     }
 })
     .then((thing) => {
-        thingConnection.on('change-gate', (gateState) => {
+        thingConnection.on('gate', (gateState) => {
             thing.writeProperty("open", gateState);
         });
         thing.writeProperty("open", true);
@@ -187,7 +210,7 @@ WoT.produce({
     }
 })
     .then((thing) => {
-        thingConnection.on('change-garage-door', (garageDoorState) => {
+        thingConnection.on('garage-door', (garageDoorState) => {
             thing.writeProperty("open", garageDoorState);
         });
         thing.writeProperty("open", true);
@@ -239,13 +262,13 @@ WoT.produce({
     },
 })
     .then((thing) => {
-        thingConnection.on('change-outside-temperature', (temperature) => {
+        thingConnection.on('outside-temperature', (temperature) => {
             thing.writeProperty("temperature", temperature);
         });
-        thingConnection.on('change-outside-humidity', (humidity) => {
+        thingConnection.on('outside-humidity', (humidity) => {
             thing.writeProperty("humidity", humidity);
         });
-        thingConnection.on('change-outside-pressure', (pressure) => {
+        thingConnection.on('outside-pressure', (pressure) => {
             thing.writeProperty("pressure", pressure);
         });
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
