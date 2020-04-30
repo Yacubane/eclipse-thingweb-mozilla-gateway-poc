@@ -1,0 +1,6 @@
+{
+    "http": {
+        "port": 8082,
+        "allowSelfSigned": true
+    }
+}

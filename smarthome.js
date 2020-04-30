@@ -9,6 +9,10 @@ class ThingValue {
         listener(this.value)
     }
 
+    getValue() {
+        return this.value;
+    }
+
     setValue(value) {
         this.value = value;
         this.listeners.forEach(listener => listener(this.value));
@@ -18,18 +22,19 @@ class ThingValue {
 class ThingConnection {
     constructor() {
         this.values = {
-            'light': new ThingValue(),
+            'outside-lights': new ThingValue(),
             'gate': new ThingValue(),
             'garage-door': new ThingValue(),
             'outside-temperature': new ThingValue(),
             'outside-humidity': new ThingValue(),
             'outside-pressure': new ThingValue()
         }
+
         this._startMock();
     }
 
     _startMock() {
-        this.values['light'].setValue(false);
+        this.values['outside-lights'].setValue(false);
         this.values['gate'].setValue(false);
         this.values['garage-door'].setValue(false);
         this.values['outside-temperature'].setValue(22);
@@ -48,6 +53,14 @@ class ThingConnection {
 
         } else if (action === 'toggle-garage-door') {
 
+        } else if (action === 'turn-on-outside-lights') {
+            if(this.values['outside-lights'].getValue() === false){
+                this.values['outside-lights'].setValue(true);
+            }
+        } else if (action === 'turn-off-outside-lights') {
+            if(this.values['outside-lights'].getValue() === true){
+                this.values['outside-lights'].setValue(false);
+            }
         }
     }
 }
@@ -65,8 +78,10 @@ WoT.produce({
     },
     support: "git://github.com/eclipse/thingweb.node-wot.git",
     "@context": ["https://www.w3.org/2019/wot/td/v1", { "iot": "http://example.org/iot" }],
+    "@type": ["Light", "OnOffSwitch"],
     properties: {
         on: {
+            "@type": "OnOffProperty",
             type: "boolean",
             description: "Determines if lights are turned on",
             descriptions: {
@@ -96,180 +111,16 @@ WoT.produce({
         thingConnection.on('outside-lights', (lightState) => {
             thing.writeProperty("on", lightState);
         });
-        thing.writeProperty("on", true);
+        thing.setPropertyWriteHandler("on", (value) => {
+            if(value) {
+                thingConnection.perform('turn-on-outside-lights');
+            } else {
+                thingConnection.perform('turn-off-outside-lights');
+            }
+        })
+
         thing.setActionHandler("toggle", (params, options) => {
             thingConnection.perform("toggle-outside-lights")
-        });
-        thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
-    })
-    .catch((e) => {
-        console.log(e);
-    });
-
-
-WoT.produce({
-    title: "gate",
-    titles: {
-        "en": "gate"
-    },
-    description: "Outside gate device",
-    descriptions: {
-        "en": "Outside gate device",
-    },
-    support: "git://github.com/eclipse/thingweb.node-wot.git",
-    "@context": ["https://www.w3.org/2019/wot/td/v1", { "iot": "http://example.org/iot" }],
-    properties: {
-        open: {
-            type: "boolean",
-            description: "Determines if gate is open",
-            descriptions: {
-                "en": "Determines if gate is open"
-            },
-            observable: true
-        },
-    },
-    actions: {
-        toggle: {
-            description: "Toggles gate",
-            descriptions: {
-                "en": "Toggles gate",
-            }
-        },
-    },
-    events: {
-        closed: {
-            description: "Closed gate event",
-            descriptions: {
-                "en": "Closed gate event"
-            }
-        },
-        opened: {
-            description: "Opened gate event",
-            descriptions: {
-                "en": "Opened gate event"
-            }
-        }
-    }
-})
-    .then((thing) => {
-        thingConnection.on('gate', (gateState) => {
-            thing.writeProperty("open", gateState);
-        });
-        thing.writeProperty("open", true);
-        thing.setActionHandler("toggle", (params, options) => {
-            thingConnection.perform("toggle-gate")
-        });
-        thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
-    })
-    .catch((e) => {
-        console.log(e);
-    });
-
-WoT.produce({
-    title: "garage-door",
-    titles: {
-        "en": "garage-door"
-    },
-    description: "Garage door",
-    descriptions: {
-        "en": "Garage door",
-    },
-    support: "git://github.com/eclipse/thingweb.node-wot.git",
-    "@context": ["https://www.w3.org/2019/wot/td/v1", { "iot": "http://example.org/iot" }],
-    properties: {
-        open: {
-            type: "boolean",
-            description: "Determines if garage doors are open",
-            descriptions: {
-                "en": "Determines if garage doors are open"
-            },
-            observable: true
-        },
-    },
-    actions: {
-        toggle: {
-            description: "Toggle garage doors",
-            descriptions: {
-                "en": "Toggle garage doors",
-            }
-        },
-    },
-    events: {
-        closed: {
-            description: "Closed garage door event",
-            descriptions: {
-                "en": "Closed garage door event"
-            }
-        },
-        opened: {
-            description: "Opened garage door event",
-            descriptions: {
-                "en": "Opened garage door event"
-            }
-        }
-    }
-})
-    .then((thing) => {
-        thingConnection.on('garage-door', (garageDoorState) => {
-            thing.writeProperty("open", garageDoorState);
-        });
-        thing.writeProperty("open", true);
-        thing.setActionHandler("toggle", (params, options) => {
-            thingConnection.perform("toggle-garage-door")
-        });
-        thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
-    })
-    .catch((e) => {
-        console.log(e);
-    });
-
-WoT.produce({
-    title: "outside-sensor",
-    titles: {
-        "en": "outside-sensor"
-    },
-    description: "Outside sensor in garden",
-    descriptions: {
-        "en": "Outside sensor in garden",
-    },
-    support: "git://github.com/eclipse/thingweb.node-wot.git",
-    "@context": ["https://www.w3.org/2019/wot/td/v1", { "iot": "http://example.org/iot" }],
-    properties: {
-        temperature: {
-            type: "integer",
-            description: "Determines temperature outside",
-            descriptions: {
-                "en": "Determines temperature outside"
-            },
-            observable: true
-        },
-        humidity: {
-            type: "integer",
-            description: "Determines humidity outside",
-            descriptions: {
-                "en": "Determines humidity outside"
-            },
-            observable: true
-        },
-        pressure: {
-            type: "integer",
-            description: "Determines pressure outside",
-            descriptions: {
-                "en": "Determines pressure outside"
-            },
-            observable: true
-        },
-    },
-})
-    .then((thing) => {
-        thingConnection.on('outside-temperature', (temperature) => {
-            thing.writeProperty("temperature", temperature);
-        });
-        thingConnection.on('outside-humidity', (humidity) => {
-            thing.writeProperty("humidity", humidity);
-        });
-        thingConnection.on('outside-pressure', (pressure) => {
-            thing.writeProperty("pressure", pressure);
         });
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
