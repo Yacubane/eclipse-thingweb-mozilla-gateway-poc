@@ -1,0 +1,9 @@
+{
+    "mqtt": {
+        "broker": "mqtt://localhost:1883",
+        "username": "",
+        "password": "",
+        "clientId": "test-client",
+        "protocolVersion": 5
+    }
+}
