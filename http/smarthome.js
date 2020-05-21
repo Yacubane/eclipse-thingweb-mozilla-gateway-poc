@@ -35,7 +35,7 @@ class ThingConnection {
 
     _startMock() {
         this.values['outside-lights'].setValue(false);
-        this.values['gate'].setValue('locked');
+        this.values['gate'].setValue(false);
         this.values['garage-door'].setValue(false);
         this.values['outside-temperature'].setValue(22);
         this.values['outside-humidity'].setValue(25);
@@ -49,38 +49,40 @@ class ThingConnection {
     perform(action) {
         if (action === 'toggle-outside-lights') {
 
-        } else if (action === 'toggle-gate') {
-
-        } else if (action === 'toggle-garage-door') {
-
         } else if (action === 'turn-on-outside-lights') {
-            if(this.values['outside-lights'].getValue() === false){
+            if (this.values['outside-lights'].getValue() === false) {
                 this.values['outside-lights'].setValue(true);
             }
         } else if (action === 'turn-off-outside-lights') {
-            if(this.values['outside-lights'].getValue() === true){
+            if (this.values['outside-lights'].getValue() === true) {
                 this.values['outside-lights'].setValue(false);
             }
-        } else if (action === 'unlock-gate'){
-            if(this.values['gate'] === 'locked'){
-                this.values['gate'],setValue('unlocked');
+        } else if (action === 'open-gate') {
+            if (this.values['gate'] == false) {
+                this.values['gate'], setValue(true);
             }
-        } else if (action === 'lock-gate'){
-            if(this.values['gate'] === 'unlocked'){
-                this.values['gate'],setValue('locked');
+        } else if (action === 'close-gate') {
+            if (this.values['gate'] === true) {
+                this.values['gate'], setValue(false);
             }
-        } else if (action === 'open-garage-door'){
-            if(this.values['garage-door'] === false){
-                this.values['garage-door'],setValue(true);
+        } else if (action === 'toggle-gate') {
+            let value = this.values['gate'].getValue();
+            this.values['gate'].setValue(!value);
+        } else if (action === 'open-garage-door') {
+            if (this.values['garage-door'] === false) {
+                this.values['garage-door'], setValue(true);
             }
-        } else if (action === 'close-garage-door'){
-            if(this.values['garage-door'] === true){
-                this.values['garage-door'],setValue(false);
+        } else if (action === 'close-garage-door') {
+            if (this.values['garage-door'] === true) {
+                this.values['garage-door'], setValue(false);
             }
+        } else if (action === 'toggle-garage-door') {
+            let value = this.values['garage-door'].getValue();
+            this.values['garage-door'].setValue(!value);
         }
     }
 
-    update(id, newValue){
+    update(id, newValue) {
         this.values[id].setValue(newValue);
     }
 }
@@ -132,7 +134,7 @@ WoT.produce({
             thing.writeProperty("on", lightState);
         });
         thing.setPropertyWriteHandler("on", (value) => {
-            if(value) {
+            if (value) {
                 thingConnection.perform('turn-on-outside-lights');
             } else {
                 thingConnection.perform('turn-off-outside-lights');
@@ -159,11 +161,11 @@ WoT.produce({
     },
     support: "git://github.com/eclipse/thingweb.node-wot.git",
     "@context": ["https://www.w3.org/2019/wot/td/v1", { "iot": "http://example.org/iot" }],
-    "@type": ["Lock"],
+    "@type": ["DoorSensor"],
     properties: {
         state: {
-            "@type": "LockedProperty",
-            type: "string",
+            "@type": "OpenProperty",
+            type: "boolean",
             title: "Gate state",
             description: "Determines if gate is open",
             descriptions: {
@@ -173,7 +175,13 @@ WoT.produce({
         },
     },
     actions: {
-        lock: {
+        open: {
+            description: "Open gate",
+            description: {
+                "en": "Open gate",
+            }
+        },
+        close: {
             description: "Close gate",
             descriptions: {
                 "en": "Close gate",
@@ -184,12 +192,6 @@ WoT.produce({
             description: {
                 "en": "Toggle gate state",
             }
-        },
-        unlock: {
-            description: "Open gate",
-            description: {
-                "en": "Open gate",
-            }
         }
     }
 })
@@ -198,12 +200,38 @@ WoT.produce({
             thing.writeProperty("state", gateState);
         });
         thing.setPropertyWriteHandler('state', (state) => {
-            if(state == "unlocked") {
-                thingConnection.perform('unlock-gate');
-            } else if(state == "locked") {
-                thingConnection.perform('lock-gate');
+            if (state) {
+                thingConnection.perform('close-gate');
+            } else if (!state) {
+                thingConnection.perform('open-gate');
             }
-        })
+        });
+        thing.setActionHandler("open", (params, options) => {
+            return thing.readProperty("state").then((state) => {
+                console.log(options, state);
+                if (!state) {
+                    thingConnection.perform("open-gate");
+                    thing.writeProperty("state", true);
+                }
+            });
+        });
+        thing.setActionHandler("close", (params, options) => {
+            return thing.readProperty("state").then((state) => {
+                console.log(options, state);
+                if (state) {
+                    thingConnection.perform("close-gate");
+                    thing.writeProperty("state", false);
+                }
+            });
+        });
+        thing.setActionHandler("toggle", (params, options) => {
+            return thing.readProperty("state").then((state) => {
+                console.log(options, state);
+
+                thingConnection.perform("toggle-gate");
+                thing.writeProperty("state", !state);
+            });
+        });
 
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
@@ -237,15 +265,21 @@ WoT.produce({
     },
     actions: {
         open: {
-            description: "Open gate",
+            description: "Open garage door",
             descriptions: {
-                "en": "Open gate",
+                "en": "Open garage door",
             }
         },
         close: {
-            description: "Close gate",
+            description: "Close garage door",
             description: {
-                "en": "Close gate",
+                "en": "Close garage door",
+            }
+        },
+        toggle: {
+            description: "Toggle garage door",
+            description: {
+                "en": "Toggle garage door"
             }
         }
     }
@@ -255,12 +289,37 @@ WoT.produce({
             thing.writeProperty("state", gateState);
         });
         thing.setPropertyWriteHandler('state', (state) => {
-            if(state) {
+            if (state) {
                 thingConnection.perform('open-garage-door');
             } else {
                 thingConnection.perform('close-garage-door');
             }
-        })
+        });
+        thing.setActionHandler("open", (params, options) => {
+            return thing.readProperty("state").then((state) => {
+                console.log(params, options, state);
+                if (!state) {
+                    thingConnection.perform("open-garage-door");
+                    thing.writeProperty("state", true);
+                }
+            });
+        });
+        thing.setActionHandler("close", (params, options) => {
+            return thing.readProperty("state").then((state) => {
+                console.log(options, state);
+                if (state) {
+                    thingConnection.perform("close-garage-door");
+                    thing.writeProperty("state", false);
+                }
+            });
+        });
+        thing.setActionHandler("toggle", (params, options) => {
+            return thing.readProperty("state").then((state) => {
+                console.log(options, state);
+                thing.writeProperty("state", !state);
+            });
+        });
+
 
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
@@ -392,4 +451,3 @@ WoT.produce({
     .catch((e) => {
         console.log(e);
     });
-    
