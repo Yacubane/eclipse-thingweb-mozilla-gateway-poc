@@ -135,9 +135,14 @@ WoT.produce({
         thingConnection.on('outside-lights', (lightState) => {
             thing.writeProperty("on", lightState);
         });
-        thing.setPropertyWriteHandler("on", (value) => {
+        thing.setPropertyWriteHandler("on", (state) => {
             return new Promise((resolve, reject) => {
-                resolve(value);
+                if(state){
+                    thingConnection.perform('turn-on-outside-lights');
+                }else{
+                    thingConnection.perform('turn-off-outside-lights');
+                }
+                resolve(state);
             }); 
         })
 
