@@ -30,16 +30,18 @@ class ThingConnection {
             'outside-pressure': new ThingValue()
         }
 
-        this._startMock();
+        setTimeout(() => this._startMock(), 1000);
     }
 
     _startMock() {
         this.values['outside-lights'].setValue(false);
         this.values['gate'].setValue(false);
         this.values['garage-door'].setValue(false);
-        this.values['outside-temperature'].setValue(22);
-        this.values['outside-humidity'].setValue(25);
-        this.values['outside-pressure'].setValue(1020);
+        setInterval(()=> {
+            this.values['outside-temperature'].setValue(Math.floor(Math.random() * 40) - 5);
+            this.values['outside-humidity'].setValue(Math.floor(Math.random() * 100));
+            this.values['outside-pressure'].setValue(Math.floor(Math.random() * 100) + 950);
+        }, 5000);
     }
 
     on(event, listener) {
@@ -90,7 +92,7 @@ class ThingConnection {
 
 thingConnection = new ThingConnection();
 
-//outisde lights
+//outside lights
 WoT.produce({
     title: "outside-light",
     titles: {
@@ -113,45 +115,24 @@ WoT.produce({
             },
             observable: true
         },
-    },
-    actions: {
-        toggle: {
-            description: "Toggle lights",
-            descriptions: {
-                "en": "Toggle lights",
-            }
-        },
-    },
-    events: {
-        change: {
-            description: "Lights toggle event",
-            descriptions: {
-                "en": "Lights toggle event"
-            }
-        }
     }
 })
     .then((thing) => {
         thingConnection.on('outside-lights', (lightState) => {
-            thing.writeProperty("on", lightState);
+            thing.writeProperty("on", lightState, {fromBackend: true});
         });
-        thing.setPropertyWriteHandler("on", (state) => {
+        thing.setPropertyWriteHandler("on", (state, options) => {
             return new Promise((resolve, reject) => {
-                if(state){
-                    thingConnection.perform('turn-on-outside-lights');
-                }else{
-                    thingConnection.perform('turn-off-outside-lights');
+                if (!options || !options.fromBackend) {
+                    if (state) {
+                        thingConnection.perform('turn-on-outside-lights');
+                    } else {
+                        thingConnection.perform('turn-off-outside-lights');
+                    }
                 }
                 resolve(state);
-            }); 
+            });
         })
-
-        thing.setActionHandler("toggle", (params, options) => {
-            return thing.readProperty("on").then((state) =>{
-                thingConnection.perform("toggle-outside-lights");
-                thing.writeProperty("state", !state);
-            })
-        });
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
     .catch((e) => {
@@ -180,22 +161,11 @@ WoT.produce({
             descriptions: {
                 "en": "Determines if gate is open"
             },
-            observable: true
+            observable: true,
+            readOnly: true
         },
     },
     actions: {
-        open: {
-            description: "Open gate",
-            description: {
-                "en": "Open gate",
-            }
-        },
-        close: {
-            description: "Close gate",
-            descriptions: {
-                "en": "Close gate",
-            }
-        },
         toggle: {
             description: "Toggle gate state",
             description: {
@@ -208,31 +178,9 @@ WoT.produce({
         thingConnection.on('gate', (gateState) => {
             thing.writeProperty("state", gateState);
         });
-        thing.setPropertyWriteHandler('state', (state) => {
-            return new Promise((resolve, reject) =>{
-                resolve(state);
-            });
-        });
-        thing.setActionHandler("open", (params, options) => {
-            return thing.readProperty("state").then((state) => {
-                if (!state) {
-                    thingConnection.perform("open-gate");
-                    thing.writeProperty("state", true);
-                }
-            });
-        });
-        thing.setActionHandler("close", (params, options) => {
-            return thing.readProperty("state").then((state) => {
-                if (state) {
-                    thing.writeProperty("state", false);
-                    return thingConnection.perform("close-gate");
-                }
-            });
-        });
         thing.setActionHandler("toggle", (params, options) => {
             return thing.readProperty("state").then((state) => {
                 thingConnection.perform("toggle-gate");
-                thing.writeProperty("state", !state);
             });
         });
 
@@ -268,18 +216,6 @@ WoT.produce({
         },
     },
     actions: {
-        open: {
-            description: "Open garage door",
-            descriptions: {
-                "en": "Open garage door",
-            }
-        },
-        close: {
-            description: "Close garage door",
-            description: {
-                "en": "Close garage door",
-            }
-        },
         toggle: {
             description: "Toggle garage door",
             description: {
@@ -293,30 +229,13 @@ WoT.produce({
             thing.writeProperty("state", gateState);
         });
         thing.setPropertyWriteHandler('state', (state) => {
-            return new Promise((resolve, reject) =>{
+            return new Promise((resolve, reject) => {
                 resolve(state);
-            });
-        });
-        thing.setActionHandler("open", (params, options) => {
-            return thing.readProperty("state").then((state) => {
-                if (!state) {
-                    thingConnection.perform('open-garage-door');
-                    thing.writeProperty("state", true);
-                }
-            });
-        });
-        thing.setActionHandler("close", (params, options) => {
-            return thing.readProperty("state").then((state) => {
-                if (state) {
-                    thingConnection.perform('close-garage-door');
-                    thing.writeProperty("state", false);
-                }
             });
         });
         thing.setActionHandler("toggle", (params, options) => {
             return thing.readProperty("state").then((state) => {
                 thingConnection.perform('toggle-garage-door');
-                thing.writeProperty("state", !state);
             });
         });
 
@@ -357,13 +276,6 @@ WoT.produce({
         thingConnection.on('outside-temperature', (measurement) => {
             thing.writeProperty('val', measurement);
         });
-        thing.setPropertyWriteHandler('val', (measurement) => {
-            return new Promise((resolve, reject) =>{
-                thingConnection.update('outside-temperature', measurement);
-                resolve(measurement);
-            });
-        });
-
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
     .catch((e) => {
@@ -404,13 +316,6 @@ WoT.produce({
         thingConnection.on('outside-humidity', (measurement) => {
             thing.writeProperty('val', measurement);
         });
-        thing.setPropertyWriteHandler('val', (measurement) => {
-            return new Promise((resolve, reject) => {
-                thingConnection.update('outside-humidity', measurement);
-                resolve(measurement);
-            });
-        })
-
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
     .catch((e) => {
@@ -451,12 +356,6 @@ WoT.produce({
         thingConnection.on('outside-pressure', (measurement) => {
             thing.writeProperty('val', measurement);
         });
-        thing.setPropertyWriteHandler('val', (measurement) => {
-            return new Promise((resolve, reject) => {
-                thingConnection.update('outside-pressure', measurement);
-                resolve(measurement);
-            });
-        })
 
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
