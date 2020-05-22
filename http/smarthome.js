@@ -58,23 +58,23 @@ class ThingConnection {
                 this.values['outside-lights'].setValue(false);
             }
         } else if (action === 'open-gate') {
-            if (this.values['gate'] == false) {
-                this.values['gate'], setValue(true);
+            if (this.values['gate'].getValue() == false) {
+                this.values['gate'].setValue(true);
             }
         } else if (action === 'close-gate') {
-            if (this.values['gate'] === true) {
-                this.values['gate'], setValue(false);
+            if (this.values['gate'].getValue() === true) {
+                this.values['gate'].setValue(false);
             }
         } else if (action === 'toggle-gate') {
             let value = this.values['gate'].getValue();
             this.values['gate'].setValue(!value);
         } else if (action === 'open-garage-door') {
-            if (this.values['garage-door'] === false) {
-                this.values['garage-door'], setValue(true);
+            if (this.values['garage-door'].getValue() === false) {
+                this.values['garage-door'].setValue(true);
             }
         } else if (action === 'close-garage-door') {
-            if (this.values['garage-door'] === true) {
-                this.values['garage-door'], setValue(false);
+            if (this.values['garage-door'].getValue() === true) {
+                this.values['garage-door'].setValue(false);
             }
         } else if (action === 'toggle-garage-door') {
             let value = this.values['garage-door'].getValue();
@@ -200,15 +200,12 @@ WoT.produce({
             thing.writeProperty("state", gateState);
         });
         thing.setPropertyWriteHandler('state', (state) => {
-            if (state) {
-                thingConnection.perform('close-gate');
-            } else if (!state) {
-                thingConnection.perform('open-gate');
-            }
+            return new Promise((resolve, reject) =>{
+                resolve(state);
+            });
         });
         thing.setActionHandler("open", (params, options) => {
             return thing.readProperty("state").then((state) => {
-                console.log(options, state);
                 if (!state) {
                     thingConnection.perform("open-gate");
                     thing.writeProperty("state", true);
@@ -217,17 +214,14 @@ WoT.produce({
         });
         thing.setActionHandler("close", (params, options) => {
             return thing.readProperty("state").then((state) => {
-                console.log(options, state);
                 if (state) {
-                    thingConnection.perform("close-gate");
                     thing.writeProperty("state", false);
+                    return thingConnection.perform("close-gate");
                 }
             });
         });
         thing.setActionHandler("toggle", (params, options) => {
             return thing.readProperty("state").then((state) => {
-                console.log(options, state);
-
                 thingConnection.perform("toggle-gate");
                 thing.writeProperty("state", !state);
             });
@@ -289,33 +283,29 @@ WoT.produce({
             thing.writeProperty("state", gateState);
         });
         thing.setPropertyWriteHandler('state', (state) => {
-            if (state) {
-                thingConnection.perform('open-garage-door');
-            } else {
-                thingConnection.perform('close-garage-door');
-            }
+            return new Promise((resolve, reject) =>{
+                resolve(state);
+            });
         });
         thing.setActionHandler("open", (params, options) => {
             return thing.readProperty("state").then((state) => {
-                console.log(params, options, state);
                 if (!state) {
-                    thingConnection.perform("open-garage-door");
+                    thingConnection.perform('open-garage-door');
                     thing.writeProperty("state", true);
                 }
             });
         });
         thing.setActionHandler("close", (params, options) => {
             return thing.readProperty("state").then((state) => {
-                console.log(options, state);
                 if (state) {
-                    thingConnection.perform("close-garage-door");
+                    thingConnection.perform('close-garage-door');
                     thing.writeProperty("state", false);
                 }
             });
         });
         thing.setActionHandler("toggle", (params, options) => {
             return thing.readProperty("state").then((state) => {
-                console.log(options, state);
+                thingConnection.perform('toggle-garage-door');
                 thing.writeProperty("state", !state);
             });
         });
