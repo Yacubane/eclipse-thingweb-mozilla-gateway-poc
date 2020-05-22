@@ -48,7 +48,8 @@ class ThingConnection {
 
     perform(action) {
         if (action === 'toggle-outside-lights') {
-
+            let value = this.values['outside-lights'].getValue();
+            this.values['outside-lights'].setValue(!value);
         } else if (action === 'turn-on-outside-lights') {
             if (this.values['outside-lights'].getValue() === false) {
                 this.values['outside-lights'].setValue(true);
@@ -89,6 +90,7 @@ class ThingConnection {
 
 thingConnection = new ThingConnection();
 
+//outisde lights
 WoT.produce({
     title: "outside-light",
     titles: {
@@ -134,15 +136,16 @@ WoT.produce({
             thing.writeProperty("on", lightState);
         });
         thing.setPropertyWriteHandler("on", (value) => {
-            if (value) {
-                thingConnection.perform('turn-on-outside-lights');
-            } else {
-                thingConnection.perform('turn-off-outside-lights');
-            }
+            return new Promise((resolve, reject) => {
+                resolve(value);
+            }); 
         })
 
         thing.setActionHandler("toggle", (params, options) => {
-            thingConnection.perform("toggle-outside-lights");
+            return thing.readProperty("on").then((state) =>{
+                thingConnection.perform("toggle-outside-lights");
+                thing.writeProperty("state", !state);
+            })
         });
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
@@ -150,6 +153,7 @@ WoT.produce({
         console.log(e);
     });
 
+//gate
 WoT.produce({
     title: "gate",
     titles: {
@@ -233,6 +237,7 @@ WoT.produce({
         console.log(e);
     });
 
+//garage door
 WoT.produce({
     title: "garage-door",
     titles: {
@@ -317,6 +322,7 @@ WoT.produce({
         console.log(e);
     });
 
+//outside temperature
 WoT.produce({
     title: "outside-temperature",
     titles: {
@@ -347,8 +353,11 @@ WoT.produce({
             thing.writeProperty('val', measurement);
         });
         thing.setPropertyWriteHandler('val', (measurement) => {
-            thingConnection.update('outside-temperature', measurement);
-        })
+            return new Promise((resolve, reject) =>{
+                thingConnection.update('outside-temperature', measurement);
+                resolve(measurement);
+            });
+        });
 
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
     })
@@ -356,6 +365,7 @@ WoT.produce({
         console.log(e);
     });
 
+//outside humidity
 WoT.produce({
     title: "outside-humidity",
     titles: {
@@ -390,7 +400,10 @@ WoT.produce({
             thing.writeProperty('val', measurement);
         });
         thing.setPropertyWriteHandler('val', (measurement) => {
-            thingConnection.update('outside-humidity', measurement);
+            return new Promise((resolve, reject) => {
+                thingConnection.update('outside-humidity', measurement);
+                resolve(measurement);
+            });
         })
 
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
@@ -399,6 +412,7 @@ WoT.produce({
         console.log(e);
     });
 
+//outside pressure
 WoT.produce({
     title: "outside-pressure",
     titles: {
@@ -433,7 +447,10 @@ WoT.produce({
             thing.writeProperty('val', measurement);
         });
         thing.setPropertyWriteHandler('val', (measurement) => {
-            thingConnection.update('outside-pressure', measurement);
+            return new Promise((resolve, reject) => {
+                thingConnection.update('outside-pressure', measurement);
+                resolve(measurement);
+            });
         })
 
         thing.expose().then(() => { console.info(thing.getThingDescription().title + " ready"); });
