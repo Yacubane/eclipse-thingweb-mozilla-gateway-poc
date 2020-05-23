@@ -1,17 +1,17 @@
 # Eclipse thingweb mozilla gateway poc
-This is a prove of concept project for mozilla gateway adapter to thingweb wot available here: [adapter homepage](https://github.com/jakubdybczak/w3c-web-of-things-adapter).
+This is a prove of concept project for Mozilla Gateway adapter to Eclipse Thingweb wot available here: [adapter homepage](https://github.com/jakubdybczak/w3c-web-of-things-adapter).
 
 ## Usage
 
-Currently there ara available two protocols to communicate between adapter and thingweb, http and mqtt.
+Currently there are available two protocols to communicate between adapter and Eclipse Thingweb, http and mqtt.
 
 ### Prerequisites
-You need to build thingweb.
-1. Clone thingweb repository:
+You need to build Eclipse Thingweb.
+1. Clone Eclipse Thingweb repository:
 ```
 git clone https://github.com/eclipse/thingweb.node-wot
 ```
-2. Go into thingweb repository:
+2. Go into Eclipse Thingweb repository:
 ```
 cd thingweb.node-wot
 ```
