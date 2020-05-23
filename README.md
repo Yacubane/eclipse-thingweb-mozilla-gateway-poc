@@ -35,10 +35,10 @@ cd eclipse-thingweb-mozilla-gateway-poc/http/
 ```
 ./start.sh 
 ```
-3. Now all things specified in smarthome.js should be available on [localhost](http://localhost:8082/).
+3. Now all things specified in smarthome.js should be available on [localhost:8082](http://localhost:8082/).
 
 ### mqtt
-(*Note: in order to run mqtt examples you need to have installed mosquitto.*)
+(*Note: in order to run mqtt examples you need to have installed [mosquitto](https://mosquitto.org/download/).*)
 
 1. Start mosquitto:
 ```
